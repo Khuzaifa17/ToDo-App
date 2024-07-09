@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/Custom/Widgets.dart';
 import 'package:flutter_application_1/Models/add_data_entity.dart';
+import 'package:flutter_application_1/Utils/ImageUtils.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -45,7 +46,11 @@ class _AddDataState extends State<AddData> {
             Center(
               child: InkWell(
                 onTap: () {
-                  button();
+                  DialogUtil.showImagePickerDialog(
+                      context,
+                      (File? Image) => setState(() {
+                            pickImage = Image;
+                          }));
                 },
                 child: pickImage != null
                     ? Container(
@@ -200,60 +205,5 @@ class _AddDataState extends State<AddData> {
         pickImage = File(imagePicker.path);
       });
     }
-  }
-
-  button() {
-    return showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Add Photo"),
-          content: Container(
-            height: 110,
-            width: 200,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Column(
-              children: [
-                InkWell(
-                  onTap: () {
-                    getImage(ImageSource.camera);
-                    Navigator.pop(context);
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.camera,
-                        size: 40,
-                      ),
-                      const SizedBox(width: 20),
-                      SmallText(text: "Camera"),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                InkWell(
-                  onTap: () {
-                    getImage(ImageSource.gallery);
-                    Navigator.pop(context);
-                  },
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.image,
-                        size: 40,
-                      ),
-                      const SizedBox(width: 20),
-                      SmallText(text: "Gallery"),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 }

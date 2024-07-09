@@ -3,7 +3,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/Custom/Widgets.dart';
 import 'package:flutter_application_1/Models/user_entity.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_application_1/Utils/ImageUtils.dart';
 
 class EditScreen extends StatefulWidget {
   final UserEntity? updateUserEntity;
@@ -20,6 +20,7 @@ class _EditScreenState extends State<EditScreen> {
   final _formkey = GlobalKey<FormState>();
   File? pickimage;
   String? getProfileUrl;
+  String? isLoading;
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -42,12 +43,16 @@ class _EditScreenState extends State<EditScreen> {
                                   image: FileImage(
                                     pickimage!,
                                   ),
-                                  fit: BoxFit.fill),
+                                  fit: BoxFit.cover),
                               borderRadius: BorderRadius.circular(150),
                               color: Colors.indigo.shade100),
                           child: InkWell(
                             onTap: () {
-                              button();
+                              DialogUtil.showImagePickerDialog(
+                                  context,
+                                  (File? Image) => setState(() {
+                                        pickimage = Image;
+                                      }));
                             },
                             child: Align(
                               alignment: Alignment.bottomRight,
@@ -73,12 +78,17 @@ class _EditScreenState extends State<EditScreen> {
                               decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(150),
                                   image: DecorationImage(
+                                      fit: BoxFit.cover,
                                       image: NetworkImage(widget
                                           .updateUserEntity!.profileImage!)),
                                   color: Colors.indigo.shade100),
                               child: InkWell(
                                 onTap: () {
-                                  button();
+                                  DialogUtil.showImagePickerDialog(
+                                      context,
+                                      (File? Image) => setState(() {
+                                            pickimage = Image;
+                                          }));
                                 },
                                 child: Align(
                                   alignment: Alignment.bottomRight,
@@ -105,7 +115,11 @@ class _EditScreenState extends State<EditScreen> {
                                   color: Colors.indigo.shade100),
                               child: InkWell(
                                 onTap: () {
-                                  button();
+                                  DialogUtil.showImagePickerDialog(
+                                      context,
+                                      (File? Image) => setState(() {
+                                            pickimage = Image;
+                                          }));
                                 },
                                 child: Align(
                                   alignment: Alignment.bottomRight,
@@ -144,38 +158,46 @@ class _EditScreenState extends State<EditScreen> {
                         const SizedBox(
                           height: 20,
                         ),
-                        CustomButton(
-                          text: "Update",
-                          onpressed: () async {
-                            try {
-                              if (pickimage != null) {
-                                await FirebaseStorage.instance
-                                    .ref("Profile_Image")
-                                    .child(widget.updateUserEntity!.userId!)
-                                    .putFile(pickimage!);
-                                getProfileUrl = await FirebaseStorage.instance
-                                    .ref("Profile_Image")
-                                    .child(widget.updateUserEntity!.userId!)
-                                    .getDownloadURL();
-                              }
-                              await UserEntity.doc(
-                                      userId: widget.updateUserEntity!.userId!)
-                                  .update({
-                                "profileImage": getProfileUrl ??
-                                    widget.updateUserEntity!.profileImage,
-                                "name": namecontroller.text,
-                              });
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          "Profile updated Successfully")));
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(e.toString())));
-                            }
-                          },
-                        )
+                        isLoading != null
+                            ? CircularProgressIndicator()
+                            : CustomButton(
+                                text: widget.updateUserEntity != null
+                                    ? "Update"
+                                    : "Add",
+                                onpressed: () async {
+                                  try {
+                                    if (pickimage != null) {
+                                      await FirebaseStorage.instance
+                                          .ref("Profile_Image")
+                                          .child(
+                                              widget.updateUserEntity!.userId!)
+                                          .putFile(pickimage!);
+                                      getProfileUrl = await FirebaseStorage
+                                          .instance
+                                          .ref("Profile_Image")
+                                          .child(
+                                              widget.updateUserEntity!.userId!)
+                                          .getDownloadURL();
+                                    }
+                                    await UserEntity.doc(
+                                            userId: widget
+                                                .updateUserEntity!.userId!)
+                                        .update({
+                                      "profileImage": getProfileUrl ??
+                                          widget.updateUserEntity!.profileImage,
+                                      "name": namecontroller.text,
+                                    });
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                "Profile updated Successfully")));
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(e.toString())));
+                                  }
+                                },
+                              )
                       ],
                     ),
                   ),
@@ -185,75 +207,6 @@ class _EditScreenState extends State<EditScreen> {
           ]),
         ),
       ),
-    );
-  }
-
-  getImage(ImageSource source) async {
-    final imagePicker = await ImagePicker().pickImage(source: source);
-    setState(() {
-      if (imagePicker != null) {
-        pickimage = File(imagePicker.path);
-      }
-    });
-  }
-
-  button() {
-    return showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-            title: const Text("Add Photo"),
-            content: Container(
-              height: 110,
-              width: 200,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Column(
-                children: [
-                  InkWell(
-                    onTap: () {
-                      getImage(ImageSource.camera);
-                      Navigator.pop(context);
-                    },
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.camera,
-                          size: 40,
-                        ),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        SmallText(text: "Camera")
-                      ],
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  InkWell(
-                    onTap: () {
-                      getImage(ImageSource.gallery);
-                      Navigator.pop(context);
-                    },
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.image,
-                          size: 40,
-                        ),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        SmallText(text: "Gallery"),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ));
-      },
     );
   }
 }
